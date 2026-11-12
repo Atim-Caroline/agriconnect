@@ -107,6 +107,12 @@ curl.exe http://127.0.0.1:8001/api/v1/health/
 curl.exe -i http://127.0.0.1:8080/api/v1/locations/crops/
 ```
 
+Unresponsive nodes are marked unhealthy after a twenty-second health-check
+timeout by default. This allows for slower database-backed health checks; set
+`AGRI_HEALTH_CHECK_TIMEOUT_MS` to a positive integer to override it. To exercise
+slow health checks, failover, recovery, and the all-nodes-down response
+automatically, run `npm run test:failover` from `frontend`.
+
 Requests are retried on another node only when the first node refuses the
 connection before accepting the request. This avoids replaying operations that
 may already have reached a backend.

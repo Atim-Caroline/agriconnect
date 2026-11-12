@@ -17,7 +17,10 @@ if (backends.length === 0) {
 }
 
 const healthCheckInterval = 1_000;
-const healthCheckTimeout = 20_000;
+const healthCheckTimeout = Number(process.env.AGRI_HEALTH_CHECK_TIMEOUT_MS || 20_000);
+if (!Number.isInteger(healthCheckTimeout) || healthCheckTimeout < 1) {
+  throw new Error("AGRI_HEALTH_CHECK_TIMEOUT_MS must be a positive integer.");
+}
 let cachedStatuses = [];
 let lastHealthCheck = 0;
 let healthCheckPromise;
@@ -35,21 +38,25 @@ const hopByHopHeaders = new Set([
 
 function isBackendAvailable({ host, port: backendPort }) {
   return new Promise((resolve) => {
+    let settled = false;
+    const finish = (available) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(available);
+    };
+
     const request = http.get({
       host,
       port: backendPort,
       path: "/api/v1/health/",
-      timeout: healthCheckTimeout,
     }, (response) => {
       response.resume();
-      resolve(response.statusCode === 200);
+      response.once("end", () => finish(response.statusCode === 200));
+      response.once("error", () => finish(false));
     });
     const timer = setTimeout(() => request.destroy(), healthCheckTimeout);
-    request.once("close", () => clearTimeout(timer));
-    request.once("error", () => {
-      clearTimeout(timer);
-      resolve(false);
-    });
+    request.once("error", () => finish(false));
   });
 }
 
