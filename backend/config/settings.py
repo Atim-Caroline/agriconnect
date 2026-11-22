@@ -28,6 +28,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "agri.database_routing.DatabaseFailoverMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -54,11 +55,19 @@ TEMPLATES = [{
 # DATABASE CONFIGURATION
 #
 # Local development defaults to SQLite.
-# Set SUPABASE_DB_URL to use one shared Supabase PostgreSQL database for all
-# Django nodes. SQLite is retained as a separate alias, not an automatic
-# failover or synchronized backup.
+# Local SQLite is primary. Supabase PostgreSQL is a synchronized backup and
+# request failover target when local SQLite is unavailable.
 # -------------------------------------------------------
 SUPABASE_DB_URL = os.environ.get("SUPABASE_DB_URL", "").strip()
+LOCAL_DATABASE = {
+    "ENGINE": "django.db.backends.sqlite3",
+    "NAME": BASE_DIR / "db.sqlite3",
+    "CONN_MAX_AGE": 0,
+}
+DATABASES = {
+    "default": LOCAL_DATABASE,
+    "local": LOCAL_DATABASE,
+}
 
 if SUPABASE_DB_URL:
     try:
@@ -90,28 +99,17 @@ if SUPABASE_DB_URL:
             conn_health_checks=True,
         )
         database_config.setdefault("OPTIONS", {}).setdefault("sslmode", "require")
-        DATABASES = {
-            "default": database_config,
-            # Retained only for explicit management commands; Django does not
-            # automatically fail over between this alias and Supabase.
-            "local": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": BASE_DIR / "db.sqlite3",
-            },
-        }
+        DATABASES["supabase"] = database_config
     except ImportError:
         raise RuntimeError(
             "SUPABASE_DB_URL is set but 'dj-database-url' is not installed. "
             "Run: pip install dj-database-url psycopg2-binary"
         )
-else:
-    # Local SQLite (default for development — no config needed)
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+
+DATABASE_ROUTERS = ["agri.database_routing.AgriDatabaseRouter"]
+AGRI_DATABASE_MODE_FILE = Path(
+    os.environ.get("AGRI_DATABASE_MODE_FILE", BASE_DIR / ".database-mode")
+)
 
 AUTH_USER_MODEL = "agri.User"
 AUTH_PASSWORD_VALIDATORS = [

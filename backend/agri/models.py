@@ -143,3 +143,19 @@ class SyncEvent(models.Model):  # transactional outbox: written in the same tran
     last_error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta: ordering = ["created_at"]; db_table = "sync_events"
+
+class DatabaseSyncMap(models.Model):
+    source_database = models.CharField(max_length=20)
+    model_label = models.CharField(max_length=100)
+    source_pk = models.CharField(max_length=100)
+    target_pk = models.CharField(max_length=100)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "database_sync_map"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["source_database", "model_label", "source_pk"],
+                name="unique_database_sync_mapping",
+            )
+        ]

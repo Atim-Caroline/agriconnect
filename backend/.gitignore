@@ -7,3 +7,6 @@ db.sqlite3
 performance.sqlite3
 media/
 staticfiles/
+.database-mode
+.database-mode.*
+backup-reports/

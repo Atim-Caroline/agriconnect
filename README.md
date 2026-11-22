@@ -16,12 +16,14 @@ source .venv/bin/activate
 
 pip install -r requirements.txt
 
-python manage.py makemigrations agri
-python manage.py migrate
-python manage.py seed          # load demo districts, crops & accounts
+python manage.py migrate --database=default
+python manage.py seed          # load local demo districts, crops & accounts
 
 python manage.py runserver     # http://localhost:8000/api/v1/
 ```
+
+When `SUPABASE_DB_URL` is configured, also run
+`python manage.py migrate --database=supabase` before enabling failover.
 
 ---
 
@@ -87,11 +89,26 @@ recovers. All nodes must use the same Supabase database.
    Open the Vite URL printed in the terminal (normally
    `http://localhost:5173`).
 
-The backend defaults to the local `backend\db.sqlite3` file. Both processes
-share that file on this computer, but SQLite is not a suitable shared database
-for multiple machines. For the two-node demo, configure Supabase PostgreSQL as
-the shared database in `backend\.env` as described below, then run migrations
-before starting either node.
+Both backend processes use the local `backend\db.sqlite3` file as their primary
+database. Configure Supabase PostgreSQL as the synchronized backup as described
+below, then push the initial backup once with `python manage.py
+setup_database_failover`. The synchronization worker is required; run it in a
+separate terminal:
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe manage.py run_database_backup
+```
+
+The worker synchronizes the local database to Supabase every 15 seconds (after
+each sync completes). If the local database fails, the first responding Django
+node switches requests to Supabase and records that choice for both nodes. The
+system stays on Supabase after local recovery until you run
+`python manage.py failback_to_local`; that command merges cloud-side changes
+back into local, refreshes the backup, and switches back. Check the worker
+output and the conflict report after setup or failback. Changes since the last
+successful backup sync may not be present in Supabase during a sudden local
+failure.
 
 Test by making requests through the frontend or
 `http://127.0.0.1:8080/api/v1/`: with both nodes healthy, requests go to the
@@ -189,15 +206,13 @@ $env:AGRI_NODE_ID = 'standby'
 
 ---
 
-## Supabase shared database for both Django nodes
+## Supabase backup database for both Django nodes
 
-Both Django processes need the same authoritative database. This setup makes
-Supabase PostgreSQL the shared primary database, so data is still available
-when either Django process stops. It is not automatic database failover:
-the application nodes share one Supabase database, and Django will not switch
-to SQLite or another database if Supabase is unavailable. Database high
-availability and point-in-time recovery must be configured and tested in
-Supabase separately.
+Both Django processes run on the same computer and share the local SQLite
+primary. Supabase PostgreSQL is the remote backup and automatic database
+failover target if that local database becomes unavailable. It is not a
+multi-machine SQLite setup. Configure Supabase point-in-time recovery
+separately for protection against cloud-side data loss.
 
 1. Create a project at [supabase.com](https://supabase.com), then open
    **Connect → Transaction pooler** and copy the PostgreSQL URI (normally port
@@ -226,22 +241,24 @@ Supabase separately.
    pip install -r requirements.txt
    ```
 
-4. **Before switching databases:** migrations and demo seeding create schema
-   and demo data in Supabase; they do not copy existing SQLite records. If
-   `backend\db.sqlite3` contains data you need to keep, export and migrate that
-   data before switching the running services.
-5. From `backend`, initialize the Supabase database once:
+4. From `backend`, apply schema migrations to both databases and push the
+   initial backup from local to Supabase:
 
    ```powershell
    python manage.py check
-   python manage.py migrate
-   python manage.py seed
+   python manage.py migrate --database=default
+   python manage.py migrate --database=supabase
+   python manage.py setup_database_failover
    ```
 
-   `check` validates Django settings but does not prove a database connection;
-   successful `migrate` proves the connection and applies schema changes.
-6. Stop both running Django processes with **Ctrl+C**, then restart both from
-   `backend` using the same `.env` and Python environment:
+   Local SQLite is the sole source of truth. The command copies every local
+   record to Supabase and removes any Supabase-only records, so the cloud
+   database starts as an exact copy of local. A backup report is written under
+   `backend\backup-reports`. Any data written directly to Supabase beforehand
+   is lost; that is intentional.
+5. Start `run_database_backup` in its own terminal as shown above. Stop both
+   running Django processes with **Ctrl+C**, then restart both from `backend`
+   using the same `.env` and Python environment:
 
    ```powershell
    python manage.py runserver 127.0.0.1:8001
@@ -251,16 +268,14 @@ Supabase separately.
    python manage.py runserver 127.0.0.1:8002
    ```
 
-   Django reads the environment at startup; restarting is required for both
-   nodes to switch off SQLite. Verify the app through the load balancer after
-   restarting.
+   Django reads the configuration at startup; restarting is required after
+   configuration changes. Verify `/api/v1/health/` reports the active database
+   and that the load balancer can reach a healthy node.
 
-With a valid PostgreSQL `SUPABASE_DB_URL` set, Django uses Supabase as `default`;
-without it, the app uses local SQLite for development. An invalid value (such
-as the project API URL) stops Django at startup rather than silently using
-SQLite. The optional `local` SQLite database alias is not a replica and is not
-an automatic fallback. For database disaster recovery, enable and test
-Supabase backups/PITR for your project separately.
+With a valid PostgreSQL `SUPABASE_DB_URL`, local SQLite remains the primary and
+Supabase is available as the failover target. Without the URL, the app runs
+locally but has no cloud database failover. An invalid URL stops Django at
+startup rather than silently disabling the configured backup.
 
 ---
 
@@ -273,4 +288,4 @@ Supabase backups/PITR for your project separately.
 - **Transporter hub** — View open haulage jobs, active trips, completed deliveries (no "My Activity" noise)
 - **Profile editing** — Every role can update name, email, district, and preferred language
 - **Admin panel** — Verify farmers/transporters, view all orders and deliveries nationwide
-- **Supabase shared PostgreSQL** — One env variable points Django nodes to the same cloud database
+- **Local-primary database failover** — Local SQLite is backed up to Supabase PostgreSQL and can fail over to it

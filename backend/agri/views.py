@@ -13,6 +13,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import *
+from .database_routing import get_active_database
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,8 @@ logger = logging.getLogger(__name__)
 @permission_classes([AllowAny])
 def health(request):
     try:
-        with connections["default"].cursor() as cursor:
+        database_alias = get_active_database()
+        with connections[database_alias].cursor() as cursor:
             cursor.execute("SELECT 1")
             cursor.fetchone()
     except DatabaseError:
@@ -34,6 +36,7 @@ def health(request):
     return Response({
         "status": "ok",
         "database": "ok",
+        "database_alias": get_active_database(),
         "node": getattr(settings, "AGRI_NODE_ID", "") or None,
     })
 
@@ -350,7 +353,7 @@ def request_decide(request, pk):
     action = request.data.get("action")
     if action not in ("accept", "reject"):
         return err("Action must be accept or reject.")
-    with transaction.atomic():
+    with transaction.atomic(using=get_active_database()):
         r = get_object_or_404(BuyerRequest.objects.select_for_update(), pk=pk, farmer=request.user)
         if r.status != "pending":
             return err("This request was already answered.")
@@ -432,7 +435,7 @@ def order_pay(request, pk):
 def order_status(request, pk):
     u = request.user
     to = request.data.get("status")
-    with transaction.atomic():
+    with transaction.atomic(using=get_active_database()):
         o = get_object_or_404(Order.objects.select_for_update(), Q(buyer=u) | Q(seller=u), pk=pk)
         side = "seller" if o.seller_id == u.id else "buyer"
         ok = {
@@ -511,7 +514,7 @@ def jobs(request):
 def job_accept(request, pk):
     if not request.user.is_verified:
         return err("Your transporter account is awaiting admin approval.", 403)
-    with transaction.atomic():
+    with transaction.atomic(using=get_active_database()):
         if not Delivery.objects.filter(pk=pk, status="open").update(status="accepted", transporter=request.user):
             return err("Another transporter already accepted this delivery job.", 409)
         d = Delivery.objects.select_related("order", "order__buyer", "order__seller").get(pk=pk)
@@ -535,7 +538,7 @@ def delivery_status(request, pk):
     allowed_next = {"accepted": "picked_up", "picked_up": "in_transit", "in_transit": "delivered"}
     if allowed_next.get(d.status) != to:
         return err(f"Invalid delivery transition from '{d.status}' to '{to}'. Next step is '{allowed_next.get(d.status)}'.")
-    with transaction.atomic():
+    with transaction.atomic(using=get_active_database()):
         d.status = to
         d.save()
         note = request.data.get("note", "")

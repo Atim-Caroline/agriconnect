@@ -30,23 +30,23 @@ const CROP_IMAGES = {
 };
 
 const CROPS = {
-  Maize:          { emoji:"ð½", unit:"kg",    grad:"135deg,#f2c14e,#d99a1e" },
-  Groundnuts:     { emoji:"ð¥", unit:"kg",    grad:"135deg,#d9a066,#a8703a" },
-  Matooke:        { emoji:"ð", unit:"bunch", grad:"135deg,#b5dc6a,#79a73a" },
-  Tomatoes:       { emoji:"ð", unit:"crate", grad:"135deg,#f07a5a,#d2452a" },
-  Beans:          { emoji:"ð«", unit:"kg",    grad:"135deg,#c2705a,#8f4332" },
-  Rice:           { emoji:"🌾", unit:"kg",    grad:"135deg,#e8dcae,#c2b27a" },
-  "Irish potatoes":{ emoji:"ð¥", unit:"bag",  grad:"135deg,#c5a059,#8c6a32" },
-  "Sweet potatoes":{ emoji:"ð ", unit:"bag",  grad:"135deg,#c71585,#800080" },
-  Peas:           { emoji:"ð«", unit:"kg",    grad:"135deg,#6aad3a,#3d7a20" },
-  Plantain:       { emoji:"ð", unit:"bunch", grad:"135deg,#c5d454,#8a9e2a" },
+  Maize:           { unit:"kg",    grad:"135deg,#f2c14e,#d99a1e" },
+  Groundnuts:      { unit:"kg",    grad:"135deg,#d9a066,#a8703a" },
+  Matooke:         { unit:"bunch", grad:"135deg,#b5dc6a,#79a73a" },
+  Tomatoes:        { unit:"crate", grad:"135deg,#f07a5a,#d2452a" },
+  Beans:           { unit:"kg",    grad:"135deg,#c2705a,#8f4332" },
+  Rice:            { unit:"kg",    grad:"135deg,#e8dcae,#c2b27a" },
+  "Irish potatoes":{ unit:"bag",   grad:"135deg,#c5a059,#8c6a32" },
+  "Sweet potatoes":{ unit:"bag",   grad:"135deg,#c71585,#800080" },
+  Peas:            { unit:"kg",    grad:"135deg,#6aad3a,#3d7a20" },
+  Plantain:        { unit:"bunch", grad:"135deg,#c5d454,#8a9e2a" },
 };
 
 const DEMO_ACCOUNTS = [
-  { phone:"0700000001", name:"Akello Grace",  role:"farmer",      icon:"🌾", desc:"Farmer (Lira)" },
-  { phone:"0700000003", name:"Nakato Sarah",  role:"buyer",       icon:"🛒", desc:"Buyer (Kampala)" },
-  { phone:"0700000004", name:"Okot Daniel",   role:"transporter", icon:"🚚", desc:"Transporter (Gulu)" },
-  { phone:"0700000009", name:"Admin Office",  role:"admin",       icon:"🛡️", desc:"Admin" },
+  { phone:"0700000001", name:"Akello Grace",  role:"farmer",      desc:"Farmer (Lira)" },
+  { phone:"0700000003", name:"Nakato Sarah",  role:"buyer",       desc:"Buyer (Kampala)" },
+  { phone:"0700000004", name:"Okot Daniel",   role:"transporter", desc:"Transporter (Gulu)" },
+  { phone:"0700000009", name:"Admin Office",  role:"admin",       desc:"Admin" },
 ];
 
 function km(a,b){
@@ -66,9 +66,9 @@ function pwStrength(pw){
   const letters=(pw.match(/[a-zA-Z]/g)||[]).length;
   const numbers=(pw.match(/[0-9]/g)||[]).length;
   const symbols=(pw.match(/[^a-zA-Z0-9]/g)||[]).length;
-  if(pw.length<8||letters<2||numbers<2||symbols<1) return {score:1,label:"Weak — need 8+ chars, 2 letters, 2 numbers, 1 symbol"};
+  if(pw.length<8||letters<2||numbers<2||symbols<1) return {score:1,label:"Weak - need 8+ chars, 2 letters, 2 numbers, 1 symbol"};
   if(pw.length<12) return {score:2,label:"Fair"};
-  return {score:3,label:"Strong â"};
+  return {score:3,label:"Strong"};
 }
 function validatePhone(ph){ return /^07\d{8}$/.test(ph.trim()); }
 function validateName(n){ return /^[a-zA-Z\s'-]+$/.test(n.trim()) && n.trim().length>=2; }
@@ -113,7 +113,6 @@ export default function App(){
   const [searchQ,setSearchQ]=useState("");
   const [filterDistrict,setFilterDistrict]=useState("");
   const [filterCrop,setFilterCrop]=useState("");
-  // Cart: Map of listingId â { listing, qty }
   const [cart,setCart]=useState(new Map());
 
   const toast=msg=>{ setToastMsg(msg); setTimeout(()=>setToastMsg(""),3500); };
@@ -151,7 +150,7 @@ export default function App(){
   },[]);
 
   useEffect(()=>{ loadMe(); },[loadMe]);
-  const logout=()=>{ clearTokens(); setUser(null); setAuthScreen(true); clearCart(); toast("Logged out. See you soon!"); };
+  const logout=()=>{ clearTokens(); setUser(null); setAuthScreen(true); clearCart(); toast("Logged out."); };
 
   const [produceData,refreshProduce]=useData("/marketplace/produce/?page_size=60",12000);
   const listings=produceData?.results||[];
@@ -220,11 +219,8 @@ function AgriLogo({size=32,style={}}){
   return(
     <svg width={size} height={size} viewBox="0 0 48 48" fill="none" style={style}>
       <circle cx="24" cy="24" r="24" fill="#1f5a3d"/>
-      {/* leaf */}
       <path d="M24 36 C24 36 12 28 12 18 C12 12 18 8 24 8 C30 8 36 12 36 18 C36 28 24 36 24 36Z" fill="#9be15d"/>
-      {/* stem */}
       <line x1="24" y1="36" x2="24" y2="42" stroke="#9be15d" strokeWidth="2.5" strokeLinecap="round"/>
-      {/* vein */}
       <path d="M24 20 L18 14" stroke="#1f5a3d" strokeWidth="1.5" strokeLinecap="round"/>
       <path d="M24 24 L30 18" stroke="#1f5a3d" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
@@ -251,7 +247,6 @@ function AuthScreen({onAuth}){
 
   const pw=pwStrength(password);
 
-  // Convert 07XXXXXXXX â +256XXXXXXXX (matches seed data format)
   const toFullPhone = ph => "+256" + ph.replace(/^0/,"");
 
   const handleLogin=async e=>{
@@ -271,7 +266,7 @@ function AuthScreen({onAuth}){
   };
 
   const handleSignUp=async e=>{
-    e.preventDefault(); setError(""); 
+    e.preventDefault(); setError("");
     if(!validatePhone(phone)){ setError("Phone must start with 07 and have 10 digits (e.g. 0712345678)."); return; }
     if(!validateName(fullName)){ setError("Name must contain only letters and be at least 2 characters."); return; }
     if(pw.score<2){ setError("Password too weak. Need 8+ chars, 2 letters, 2 numbers, 1 symbol."); return; }
@@ -284,13 +279,13 @@ function AuthScreen({onAuth}){
       });
       const data=await readJsonResponse(res);
       if(!res.ok){
-        const msg=Object.entries(data).map(([k,v])=>`${k}: ${[].concat(v).join(" ")}`).join(" Â· ");
+        const msg=Object.entries(data).map(([k,v])=>`${k}: ${[].concat(v).join(" ")}`).join(" / ");
         throw new Error(msg||"Could not register account.");
       }
       setTokens(data);
       const u=await api("/users/me/");
       setUser(u);
-      toast(u.is_verified?"Account created! Welcome to AgriConnect.":"Account created! Admin is reviewing your credentials.");
+      toast(u.is_verified?"Account created! Welcome to AgriConnect.":"Account created. Admin will review your credentials.");
       onAuth();
     }catch(err){ setError(err.message); }
     finally{ setLoading(false); }
@@ -308,7 +303,6 @@ function AuthScreen({onAuth}){
           <img className="auth-produce-beans" src="/beans.jpg" alt=""/>
         </div>
         <div className="glass-card glass-card-login">
-          {/* Logo at top */}
           <div className="glass-logo-row">
             <AgriLogo size={36}/>
             <span className="glass-logo-text">Agri<b>Connect</b></span>
@@ -320,7 +314,6 @@ function AuthScreen({onAuth}){
           {error&&<div className="err" style={{marginBottom:12}}>{error}</div>}
 
           <form onSubmit={handleLogin}>
-            {/* Phone */}
             <div className="glass-field">
               <input
                 type="tel"
@@ -334,7 +327,6 @@ function AuthScreen({onAuth}){
               <span className="glass-field-icon"><PersonIcon/></span>
             </div>
 
-            {/* Password */}
             <div className="glass-field">
               <input
                 type={showPw?"text":"password"}
@@ -345,11 +337,10 @@ function AuthScreen({onAuth}){
                 className="glass-input"
               />
               <button type="button" className="glass-eye" onClick={()=>setShowPw(!showPw)} tabIndex={-1}>
-                {showPw ? <EyeOffIcon/> : <EyeOffIcon/>}
+                <EyeOffIcon/>
               </button>
             </div>
 
-            {/* Remember me */}
             <label className="glass-remember">
               <input type="checkbox" checked={rememberMe} onChange={e=>setRememberMe(e.target.checked)} className="glass-check"/>
               Remember me
@@ -365,14 +356,12 @@ function AuthScreen({onAuth}){
             </p>
           </form>
 
-          {/* Demo accounts */}
           <div className="glass-demo">
             <div className="glass-demo-label">Demo accounts (password: demo1234)</div>
             <div className="demo-grid">
               {DEMO_ACCOUNTS.map(p=>(
                 <button key={p.phone} type="button" className="demo-btn"
                   onClick={()=>{setPhone(p.phone);setPassword("demo1234");setError("");}}>
-                  <span className="demo-icon">{p.icon}</span>
                   <span className="demo-label">{p.desc}</span>
                 </button>
               ))}
@@ -382,7 +371,6 @@ function AuthScreen({onAuth}){
         </>
 
       ) : (
-        /* Sign-up form inside a scrollable card */
         <div className="glass-card glass-card-signup">
           <div className="glass-logo-row">
             <AgriLogo size={36}/>
@@ -394,27 +382,24 @@ function AuthScreen({onAuth}){
           {error&&<div className="err" style={{marginBottom:12}}>{error}</div>}
 
           <form onSubmit={handleSignUp} autoComplete="off">
-            {/* Role */}
             <div className="signup-section">
               <div className="signup-section-label"><span className="signup-step">1</span>Choose your role</div>
               <div className="role-cards">
                 {[
-                  {id:"farmer",emoji:"🌾",title:"Farmer"},
-                  {id:"buyer",emoji:"🛒",title:"Buyer"},
-                  {id:"transporter",emoji:"🚚",title:"Transporter"},
+                  {id:"farmer",  title:"Farmer"},
+                  {id:"buyer",   title:"Buyer"},
+                  {id:"transporter", title:"Transporter"},
                 ].map(r=>(
                   <button key={r.id} type="button"
                     className={"role-card"+(role===r.id?" selected":"")}
                     onClick={()=>setRole(r.id)}>
-                    <span className="role-card-emoji">{r.emoji}</span>
                     <span className="role-card-title">{r.title}</span>
-                    {role===r.id&&<span className="role-card-check">â</span>}
+                    {role===r.id&&<span className="role-card-check">&#10003;</span>}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Personal details */}
             <div className="signup-section">
               <div className="signup-section-label"><span className="signup-step">2</span>Personal details</div>
               <div className="glass-field">
@@ -436,7 +421,6 @@ function AuthScreen({onAuth}){
               </div>
             </div>
 
-            {/* Verification doc */}
             {role!=="buyer"&&(
               <div className="signup-section">
                 <div className="signup-section-label"><span className="signup-step">3</span>Verification document</div>
@@ -453,7 +437,6 @@ function AuthScreen({onAuth}){
               </div>
             )}
 
-            {/* Password */}
             <div className="signup-section">
               <div className="signup-section-label">
                 <span className="signup-step">{role!=="buyer"?"4":"3"}</span>Password
@@ -484,7 +467,7 @@ function AuthScreen({onAuth}){
             </div>
 
             <button className="glass-btn" disabled={loading}>
-              {loading?<><span className="btn-spinner"/> Creatingâ¦</>:"Create Account"}
+              {loading?<><span className="btn-spinner"/> Creating...</>:"Create Account"}
             </button>
 
             <p className="glass-switch">
@@ -499,7 +482,7 @@ function AuthScreen({onAuth}){
 }
 
 // ==========================================
-// SMALL SVG ICONS (no emoji)
+// SMALL SVG ICONS
 // ==========================================
 const PersonIcon=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>;
 const PhoneIcon=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C9.6 21 3 14.4 3 6.5c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>;
@@ -515,10 +498,8 @@ const BlueTick=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="#1d9bf0
 // HERO HEADER
 // ==========================================
 function HeroHeader({searchQ,setSearchQ,logout,openProfile}){
-  const {user,role,totalBoardValue,liveListingsCount,uniqueDistrictsCount,cartCount,setOpenCart}=useContext(AppContext);
+  const {user,role,cartCount,setOpenCart}=useContext(AppContext);
   const heroClass=role==="transporter"?"transporter-hero":role==="admin"?"admin-hero":role==="farmer"?"farmer-hero":"buyer-hero";
-  const gaugePercent=Math.min(1,totalBoardValue/80000000);
-  const arcLength=188.5;
   return(
     <div className={`hero ${heroClass}`}>
       <div className="top">
@@ -527,7 +508,6 @@ function HeroHeader({searchQ,setSearchQ,logout,openProfile}){
           <span className="logo">Agri<b>Connect</b></span>
         </div>
         <div className="user-menu">
-          {/* Cart icon — buyers only */}
           {role==="buyer"&&(
             <button className="cart-icon-btn" onClick={()=>setOpenCart(true)} title="My Cart">
               <CartIcon/>
@@ -536,7 +516,7 @@ function HeroHeader({searchQ,setSearchQ,logout,openProfile}){
           )}
           <div className="roles-box">
             <button className="on" onClick={openProfile} title="Edit Profile">
-              {user.full_name.split(" ")[0]} Â· {user.role.toUpperCase()}
+              {user.full_name.split(" ")[0]} - {user.role.toUpperCase()}
               {user.is_verified&&<span style={{marginLeft:4,display:"inline-flex",verticalAlign:"middle"}}><BlueTick/></span>}
             </button>
             <button onClick={logout} style={{color:"rgba(255,255,255,0.75)"}}>Log out</button>
@@ -547,40 +527,41 @@ function HeroHeader({searchQ,setSearchQ,logout,openProfile}){
       {role==="transporter"?(
         <div style={{marginTop:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <h1>🚚 Transporter Dispatch Hub</h1>
-            <span className={"pill "+(user?.is_verified?"g":"o")}>{user?.is_verified?"â Verified":"â³ Pending"}</span>
+            <h1>Transporter Dispatch</h1>
+            <span className={"pill "+(user?.is_verified?"g":"o")}>{user?.is_verified?"Verified":"Pending"}</span>
           </div>
           <p style={{opacity:0.9,fontSize:"0.9rem"}}>Check haulage jobs, update route checkpoints, and manage deliveries.</p>
         </div>
       ):role==="farmer"?(
         <div style={{marginTop:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <h1>🌾 Farm Harvest & Sales Hub</h1>
-            <span className={"pill "+(user?.is_verified?"g":"o")}>{user?.is_verified?"â Verified":"â³ Pending"}</span>
+            <h1>Farm &amp; Sales</h1>
+            <span className={"pill "+(user?.is_verified?"g":"o")}>{user?.is_verified?"Verified":"Pending"}</span>
           </div>
-          <p style={{opacity:0.9,fontSize:"0.9rem"}}>Post produce, answer buyer requests, and dispatch harvests from your farm gate.</p>
+          <p style={{opacity:0.9,fontSize:"0.9rem"}}>Post produce, answer buyer requests, and dispatch harvests from your farm.</p>
         </div>
       ):role==="admin"?(
         <div style={{marginTop:14}}>
-          <h1>🛡️ Central Network Administration</h1>
-          <p style={{opacity:0.9,fontSize:"0.9rem"}}>Manage users, approve verifications, and view all nationwide activity.</p>
+          <h1>Administration</h1>
+          <p style={{opacity:0.9,fontSize:"0.9rem"}}>Manage users, approve verifications, and view nationwide activity.</p>
         </div>
       ):(
-        /* BUYER hero — clean greeting like the reference */
         <div style={{marginTop:10}}>
           <h1 style={{fontSize:"1.4rem",margin:"0 0 4px"}}>
-            Hi, {user.full_name.split(" ")[0]} ð
+            Hi, {user.full_name.split(" ")[0]}
           </h1>
           <p style={{opacity:0.85,fontSize:"0.9rem",margin:"0 0 12px"}}>What would you like to buy today?</p>
           <div className="search">
-            <span>🔍</span>
-            <input placeholder="Search for produceâ¦" value={searchQ} onChange={e=>setSearchQ(e.target.value)}/>
+            <SearchIcon/>
+            <input placeholder="Search for produce..." value={searchQ} onChange={e=>setSearchQ(e.target.value)}/>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+const SearchIcon=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 
 // ==========================================
 // PROFILE MODAL
@@ -625,14 +606,13 @@ function ProfileModal({onClose}){
           <div>
             <h2 style={{margin:0}}>{user?.full_name}</h2>
             <div className="profile-role-badge">
-              <span>{user?.role==="farmer"?"🌾":user?.role==="transporter"?"🚚":user?.role==="buyer"?"🛒":"🛡️"}</span>
               <span>{user?.role?.toUpperCase()}</span>
               {user?.is_verified&&<BlueTick/>}
               <span className={"pill "+(user?.is_verified?"g":"o")} style={{fontSize:"0.62rem"}}>
                 {user?.is_verified?"Verified":"Pending"}
               </span>
             </div>
-            <div className="mute" style={{fontSize:"0.78rem",marginTop:2}}>ð± {user?.phone}</div>
+            <div className="mute" style={{fontSize:"0.78rem",marginTop:2}}>{user?.phone}</div>
           </div>
         </div>
 
@@ -708,7 +688,7 @@ function ProfileModal({onClose}){
           </div>
 
           <button className="btn w signup-submit" style={{marginTop:20}} disabled={loading}>
-            {loading?<><span className="btn-spinner"/> Savingâ¦</>:"Save Profile"}
+            {loading?<><span className="btn-spinner"/> Saving...</>:"Save Profile"}
           </button>
         </form>
         <button className="btn alt w" style={{marginTop:10}} onClick={onClose}>Cancel</button>
@@ -746,24 +726,24 @@ function TransporterView(){
   };
 
   const nextStepMap={
-    accepted:{status:"picked_up",label:"📦 Cargo Loaded"},
-    picked_up:{status:"in_transit",label:"ð£ï¸ On Highway"},
-    in_transit:{status:"delivered",label:"🏁 Mark Delivered"}
+    accepted:{status:"picked_up",label:"Cargo Loaded"},
+    picked_up:{status:"in_transit",label:"On Route"},
+    in_transit:{status:"delivered",label:"Mark Delivered"}
   };
 
   return(
     <div>
-      {!user?.is_verified&&<div className="warn">â³ Verification pending. You can browse jobs but cannot accept until verified.</div>}
+      {!user?.is_verified&&<div className="warn">Verification pending. You can browse jobs but cannot accept until verified.</div>}
 
       <div className="chips" style={{marginBottom:14}}>
         <button className={"chip"+(subTab==="active"?" on":"")} onClick={()=>setSubTab("active")}>
-          🚚 Active Trips ({activeDeliveries.length})
+          Active Trips ({activeDeliveries.length})
         </button>
         <button className={"chip"+(subTab==="jobs"?" on":"")} onClick={()=>setSubTab("jobs")}>
-          📋 Open Jobs ({(jobs||[]).length})
+          Open Jobs ({(jobs||[]).length})
         </button>
         <button className={"chip"+(subTab==="history"?" on":"")} onClick={()=>setSubTab("history")}>
-          🏁 Completed ({completedDeliveries.length})
+          Completed ({completedDeliveries.length})
         </button>
       </div>
 
@@ -784,16 +764,15 @@ function TransporterView(){
                   <div className="row">
                     <div>
                       <h3>{d.item}</h3>
-                      <div className="mute">Order #{d.order_number} Â· {num(d.quantity)} {d.unit}</div>
+                      <div className="mute">Order #{d.order_number} - {num(d.quantity)} {d.unit}</div>
                     </div>
                     <span className="pill o">{d.status.replace("_"," ")}</span>
                   </div>
 
-                  {/* Route display */}
                   <div style={{margin:"10px 0",background:"var(--bg)",borderRadius:12,padding:"10px 12px",border:"1px solid var(--line)"}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:"0.85rem",marginBottom:6}}>
-                      <span>ð From: <span style={{color:"var(--pri)"}}>{d.pickup}</span></span>
-                      <span>🏁 To: <span style={{color:"var(--pri)"}}>{d.dropoff}</span></span>
+                      <span>From: <span style={{color:"var(--pri)"}}>{d.pickup}</span></span>
+                      <span>To: <span style={{color:"var(--pri)"}}>{d.dropoff}</span></span>
                     </div>
                     <div className="steps">
                       <i className="on"/>
@@ -812,17 +791,16 @@ function TransporterView(){
                     <div className="stat-box"><b>{ugx(d.total_amount)}</b><small>Cargo Value</small></div>
                   </div>
 
-                  {/* Contact info */}
                   <div style={{background:"var(--bg)",borderRadius:12,padding:"8px 12px",margin:"10px 0",border:"1px solid var(--line)",fontSize:"0.82rem"}}>
                     <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-                      <span>🌾 Farmer: <b>{d.farmer_name}</b> Â· <a href={`tel:${d.pickup_phone}`} style={{color:"var(--pri)"}}>{d.pickup_phone}</a></span>
-                      <span>🛒 Buyer: <b>{d.buyer_name}</b> Â· <a href={`tel:${d.dropoff_phone}`} style={{color:"var(--pri)"}}>{d.dropoff_phone}</a></span>
+                      <span>Farmer: <b>{d.farmer_name}</b> - <a href={`tel:${d.pickup_phone}`} style={{color:"var(--pri)"}}>{d.pickup_phone}</a></span>
+                      <span>Buyer: <b>{d.buyer_name}</b> - <a href={`tel:${d.dropoff_phone}`} style={{color:"var(--pri)"}}>{d.dropoff_phone}</a></span>
                     </div>
                   </div>
 
                   <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
                     {next&&<button className="btn sm" onClick={()=>advance(d.id,next.status)}>{next.label}</button>}
-                    <button className="btn sm alt" onClick={()=>setOpenTracking(d.id)}>ðºï¸ View Timeline</button>
+                    <button className="btn sm alt" onClick={()=>setOpenTracking(d.id)}>View Timeline</button>
                   </div>
                 </div>
               );
@@ -847,15 +825,14 @@ function TransporterView(){
                   <div className="row">
                     <div>
                       <h3>{j.item}</h3>
-                      <div className="mute"><b>{j.pickup} â {j.dropoff}</b> Â· {num(j.quantity)} {j.unit}</div>
-                      <div className="mute" style={{marginTop:4}}>~{distKm} km Â· ~{eta(distKm)}</div>
-                      {/* Farmer contact for transporters viewing jobs */}
+                      <div className="mute"><b>{j.pickup} to {j.dropoff}</b> - {num(j.quantity)} {j.unit}</div>
+                      <div className="mute" style={{marginTop:4}}>~{distKm} km - ~{eta(distKm)}</div>
                       <div className="mute" style={{marginTop:4}}>
-                        🌾 Farmer: {j.farmer_name} Â· <a href={`tel:${j.pickup_phone}`} style={{color:"var(--pri)"}}>{j.pickup_phone}</a>
+                        Farmer: {j.farmer_name} - <a href={`tel:${j.pickup_phone}`} style={{color:"var(--pri)"}}>{j.pickup_phone}</a>
                       </div>
                     </div>
                     <button className="btn sm" onClick={()=>acceptJob(j.id)} disabled={!user?.is_verified}>
-                      {user?.is_verified?"Accept 🚚":"Awaiting Verification"}
+                      {user?.is_verified?"Accept":"Awaiting Verification"}
                     </button>
                   </div>
                 </div>
@@ -873,9 +850,9 @@ function TransporterView(){
               <div className="card row" key={d.id}>
                 <div>
                   <h3>{d.item}</h3>
-                  <div className="mute">{d.pickup} â {d.dropoff} Â· {num(d.quantity)} {d.unit} Â· {fmt(d.created_at)}</div>
+                  <div className="mute">{d.pickup} to {d.dropoff} - {num(d.quantity)} {d.unit} - {fmt(d.created_at)}</div>
                 </div>
-                <span className="pill g">Delivered â</span>
+                <span className="pill g">Delivered</span>
               </div>
             ))
           )}
@@ -923,7 +900,7 @@ function FarmerView(){
 
   return(
     <div>
-      {!user?.is_verified&&<div className="warn">â³ Account awaiting admin verification. Listings go live once approved.</div>}
+      {!user?.is_verified&&<div className="warn">Account awaiting admin verification. Listings go live once approved.</div>}
 
       <div className="stats-grid">
         <div className="stat-box"><b>{myListings.length}</b><small>Listings</small></div>
@@ -949,12 +926,11 @@ function FarmerView(){
                 return(
                   <div className="farmer-pc" key={l.id}>
                     <div className="farmer-ph" style={{background:photo?`url(${photo}) center/cover no-repeat`:`linear-gradient(${CROPS[l.crop_name]?.grad||"135deg,#5f8f3a,#3d6028"})`}}>
-                      {!photo&&<span style={{fontSize:"2.2rem"}}>{CROPS[l.crop_name]?.emoji||"ð±"}</span>}
                       <span className={"pill "+(l.status==="active"?"g":"o")} style={{position:"absolute",top:8,right:8}}>{l.status}</span>
                     </div>
                     <div style={{padding:"10px 12px"}}>
                       <h3 style={{margin:"0 0 4px",fontSize:"0.95rem"}}>{l.title}</h3>
-                      <div className="mute" style={{fontSize:"0.78rem"}}>{l.district_name} Â· Grade {l.quality_grade}</div>
+                      <div className="mute" style={{fontSize:"0.78rem"}}>{l.district_name} - Grade {l.quality_grade}</div>
                       <div style={{fontWeight:800,marginTop:4,fontSize:"0.9rem"}}>{ugx(l.price_per_unit)}<span className="mute">/{l.unit}</span></div>
                       <div className="mute" style={{fontSize:"0.78rem"}}>{num(l.quantity_available)} {l.unit} in stock</div>
                       <button className="btn sm bad" style={{marginTop:8,width:"100%"}} onClick={()=>removeListing(l.id)}>Remove Listing</button>
@@ -976,14 +952,13 @@ function FarmerView(){
                 <div className="row">
                   <div>
                     <h3>{r.title}</h3>
-                    <div className="mute">Buyer: <b>{r.buyer}</b> Â· {num(r.quantity)} {r.unit}{r.offered_price&&` Â· Offer: ${ugx(r.offered_price)}/${r.unit}`}</div>
+                    <div className="mute">Buyer: <b>{r.buyer}</b> - {num(r.quantity)} {r.unit}{r.offered_price&&` - Offer: ${ugx(r.offered_price)}/${r.unit}`}</div>
                     <div className="mute" style={{marginTop:4}}>
                       {r.delivery_needed?`Deliver to ${r.delivery_district||"Buyer's district"}`:"Farm gate collection"}
-                      {r.preferred_transporter_name&&` Â· 🚚 ${r.preferred_transporter_name}`}
+                      {r.preferred_transporter_name&&` - Transporter: ${r.preferred_transporter_name}`}
                     </div>
-                    {/* Buyer contact */}
                     <div style={{marginTop:6,fontSize:"0.82rem"}}>
-                      ð± Buyer phone: <a href={`tel:${r.buyer_phone||""}`} style={{color:"var(--pri)",fontWeight:700}}>{r.buyer_phone||"—"}</a>
+                      Buyer phone: <a href={`tel:${r.buyer_phone||""}`} style={{color:"var(--pri)",fontWeight:700}}>{r.buyer_phone||"—"}</a>
                     </div>
                     {r.message&&<p style={{fontStyle:"italic",marginTop:6,fontSize:"0.85rem"}}>"{r.message}"</p>}
                   </div>
@@ -1007,16 +982,16 @@ function FarmerView(){
                 <div className="row">
                   <div>
                     <h3>{o.item_title}</h3>
-                    <div className="mute">#{o.order_number} Â· {num(o.quantity)} {o.unit} Â· {ugx(o.total_amount)}</div>
-                    <div className="mute" style={{marginTop:4}}>Buyer: {o.other_name} Â· Escrow: <b>{o.payment_status?.toUpperCase()}</b></div>
-                    <div style={{marginTop:6,fontSize:"0.82rem"}}>ð± <a href={`tel:${o.buyer_phone}`} style={{color:"var(--pri)",fontWeight:700}}>{o.buyer_phone}</a></div>
+                    <div className="mute">#{o.order_number} - {num(o.quantity)} {o.unit} - {ugx(o.total_amount)}</div>
+                    <div className="mute" style={{marginTop:4}}>Buyer: {o.other_name} - Escrow: <b>{o.payment_status?.toUpperCase()}</b></div>
+                    <div style={{marginTop:6,fontSize:"0.82rem"}}><a href={`tel:${o.buyer_phone}`} style={{color:"var(--pri)",fontWeight:700}}>{o.buyer_phone}</a></div>
                   </div>
                   <span className="pill g">{o.status.replace("_"," ")}</span>
                 </div>
                 <div style={{display:"flex",gap:8,marginTop:12}}>
-                  {o.status==="confirmed"&&<button className="btn sm" onClick={()=>updateOrderStatus(o.id,"ready_for_pickup")}>â Ready for Pickup</button>}
-                  {o.status==="ready_for_pickup"&&!o.delivery_required&&<button className="btn sm" onClick={()=>updateOrderStatus(o.id,"delivered")}>ð¤ Handed Over</button>}
-                  <span className="mute" style={{alignSelf:"center",fontSize:"0.8rem"}}>{o.delivery_required?"🚚 Transporter handover":"ð Farm gate pickup"}</span>
+                  {o.status==="confirmed"&&<button className="btn sm" onClick={()=>updateOrderStatus(o.id,"ready_for_pickup")}>Ready for Pickup</button>}
+                  {o.status==="ready_for_pickup"&&!o.delivery_required&&<button className="btn sm" onClick={()=>updateOrderStatus(o.id,"delivered")}>Handed Over</button>}
+                  <span className="mute" style={{alignSelf:"center",fontSize:"0.8rem"}}>{o.delivery_required?"Transporter handover":"Farm gate pickup"}</span>
                 </div>
               </div>
             ))
@@ -1034,14 +1009,14 @@ const CartIcon=({size=22})=><svg width={size} height={size} viewBox="0 0 24 24" 
 const HomeIcon=()=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
 
 // ==========================================
-// BUYER VIEW — Vegigo-style marketplace
+// BUYER VIEW
 // ==========================================
 function BuyerView({searchQ,setSearchQ,filterDistrict,setFilterDistrict,filterCrop,setFilterCrop}){
   const {produceListings,setOpenListing,setOpenPayOrder,setOpenTracking,toast,user,
          cart,addToCart,cartCount,setOpenCart}=useContext(AppContext);
   const [orders,refreshOrders]=useData("/orders/",8000);
   const [requests]=useData("/orders/requests/",8000);
-  const [subTab,setSubTab]=useState("shop"); // shop | orders | requests
+  const [subTab,setSubTab]=useState("shop");
   const filtered=useMemo(()=>(produceListings||[]).filter(l=>{
     if(l.status!=="active") return false;
     if(filterDistrict&&l.district_name!==filterDistrict) return false;
@@ -1064,36 +1039,25 @@ function BuyerView({searchQ,setSearchQ,filterDistrict,setFilterDistrict,filterCr
     <div className="buyer-root">
       {subTab==="shop"&&(
         <div>
-          <div className="promo-banner">
-            <div className="promo-copy">
-              <span className="promo-eyebrow">From farm to table</span>
-              <div className="promo-title">Fresh &amp; Direct</div>
-              <div className="promo-sub">Straight from Uganda's farms to your door</div>
-              <button type="button" className="promo-action" onClick={()=>{setFilterCrop("");setFilterDistrict("");}}>
-                Discover produce
-              </button>
-            </div>
-            <img src={getCropImg("Tomatoes")||""} alt="" className="promo-img" onError={e=>e.target.style.display="none"}/>
-          </div>
           <div className="buyer-section-heading">
             <h3>Shop by category</h3>
           </div>
           <div className="cat-row">
             <button className={"cat-chip"+(!filterCrop?" active":"")} onClick={()=>setFilterCrop("")}>
-              <span className="cat-image cat-image-all">✦</span><span>All</span>
+              <span>All</span>
             </button>
             {Object.entries(CROPS).map(([name,c])=>(
               <button key={name} className={"cat-chip"+(filterCrop===name?" active":"")}
                 onClick={()=>setFilterCrop(filterCrop===name?"":name)}>
                 <span className="cat-image">
-                  {getCropImg(name)?<img src={getCropImg(name)} alt=""/>:<span>{c.emoji}</span>}
+                  {getCropImg(name)?<img src={getCropImg(name)} alt=""/>:null}
                 </span>
                 <span>{name.split(" ")[0]}</span>
               </button>
             ))}
           </div>
           <div className="buyer-filter-row">
-            <label htmlFor="buyer-district-filter">Fresh near you</label>
+            <label htmlFor="buyer-district-filter">Filter by district</label>
             <select value={filterDistrict} onChange={e=>setFilterDistrict(e.target.value)}
               id="buyer-district-filter"
               style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1.5px solid var(--line)",background:"var(--surf)",color:"var(--ink)",font:"inherit",outline:0}}>
@@ -1103,8 +1067,8 @@ function BuyerView({searchQ,setSearchQ,filterDistrict,setFilterDistrict,filterCr
           </div>
           <div className="buyer-section-heading buyer-popular-heading">
             <div>
-              <h3>{filterCrop||"Popular produce"}</h3>
-              {filterDistrict&&<span className="buyer-filter-caption">Available in {filterDistrict}</span>}
+              <h3>{filterCrop||"Available produce"}</h3>
+              {filterDistrict&&<span className="buyer-filter-caption">In {filterDistrict}</span>}
             </div>
             <button type="button" onClick={()=>{setFilterCrop("");setFilterDistrict("");setSearchQ("");}}>
               View all
@@ -1115,13 +1079,13 @@ function BuyerView({searchQ,setSearchQ,filterDistrict,setFilterDistrict,filterCr
           ):(
             <div className="shop-grid">
               {filtered.map(l=>{
-                const meta=CROPS[l.crop_name]||{emoji:"?",grad:"135deg,#79a73a,#5f8f3a"};
+                const meta=CROPS[l.crop_name]||{grad:"135deg,#79a73a,#5f8f3a"};
                 const photo=l.image||l.image_url||getCropImg(l.crop_name);
                 const inCart=cart.has(l.id),cartQty=cart.get(l.id)?.qty||0;
                 return(
                   <div className="shop-card" key={l.id} onClick={()=>setOpenListing(l)}>
                     <div className="shop-card-img">
-                      {photo?<img src={photo} alt={l.title}/>:<div className="shop-card-emoji" style={{background:`linear-gradient(${meta.grad})`}}>{meta.emoji}</div>}
+                      {photo?<img src={photo} alt={l.title}/>:<div className="shop-card-fallback" style={{background:`linear-gradient(${meta.grad})`}}>{l.crop_name[0]}</div>}
                       {l.farmer_verified&&<span className="shop-verified"><BlueTick/></span>}
                     </div>
                     <div className="shop-card-body">
@@ -1150,13 +1114,13 @@ function BuyerView({searchQ,setSearchQ,filterDistrict,setFilterDistrict,filterCr
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:700,fontSize:"1rem"}}>{o.item_title}</div>
-                  <div className="mute" style={{marginTop:2}}>#{o.order_number} · {num(o.quantity)} {o.unit}</div>
+                  <div className="mute" style={{marginTop:2}}>#{o.order_number} &middot; {num(o.quantity)} {o.unit}</div>
                   <div style={{fontWeight:800,color:"var(--pri)",marginTop:4,fontSize:"1rem"}}>{ugx(o.total_amount)}</div>
                   <div className="mute" style={{marginTop:4,fontSize:"0.8rem"}}>
-                    Farmer: {o.other_name} · <a href={`tel:${o.seller_phone}`} style={{color:"var(--pri)",fontWeight:700}}>{o.seller_phone}</a>
+                    Farmer: {o.other_name} &middot; <a href={`tel:${o.seller_phone}`} style={{color:"var(--pri)",fontWeight:700}}>{o.seller_phone}</a>
                   </div>
                   {o.transporter_name&&<div className="mute" style={{fontSize:"0.8rem"}}>
-                    Transporter: {o.transporter_name} {o.transporter_phone&&<a href={`tel:${o.transporter_phone}`} style={{color:"var(--pri)",fontWeight:700}}>· {o.transporter_phone}</a>}
+                    Transporter: {o.transporter_name} {o.transporter_phone&&<a href={`tel:${o.transporter_phone}`} style={{color:"var(--pri)",fontWeight:700}}>&middot; {o.transporter_phone}</a>}
                   </div>}
                   <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
                     <span className={"status-pill "+(o.status==="completed"?"done":"active")}>{o.status.replace(/_/g," ")}</span>
@@ -1179,7 +1143,7 @@ function BuyerView({searchQ,setSearchQ,filterDistrict,setFilterDistrict,filterCr
           {(!requests||requests.length===0)?<div className="card empty">No sent requests yet.</div>:requests.map(r=>(
             <div className="order-card" key={r.id}>
               <div style={{fontWeight:700}}>{r.title}</div>
-              <div className="mute">Farmer: {r.farmer} · {num(r.quantity)} {r.unit}{r.offered_price&&` · Offer: ${ugx(r.offered_price)}`}</div>
+              <div className="mute">Farmer: {r.farmer} &middot; {num(r.quantity)} {r.unit}{r.offered_price&&` &middot; Offer: ${ugx(r.offered_price)}`}</div>
               <div className="mute">{r.delivery_needed?`Deliver to ${r.delivery_district}`:"Self pickup"}</div>
               <span className={"status-pill "+(r.status==="accepted"?"done":r.status==="rejected"?"bad":"active")} style={{marginTop:8,display:"inline-block"}}>{r.status}</span>
             </div>
@@ -1234,9 +1198,9 @@ function AdminView(){
         <div className="stat-box"><b>UGX {((summary?.order_value||0)/1000000).toFixed(1)}M</b><small>GMV</small></div>
       </div>
       <div className="chips" style={{marginBottom:14}}>
-        <button className={"chip"+(subTab==="approvals"?" on":"")} onClick={()=>setSubTab("approvals")}>🛡️ Queue ({pendingUsers.length})</button>
-        <button className={"chip"+(subTab==="orders"?" on":"")} onClick={()=>setSubTab("orders")}>📋 Orders ({(allOrders||[]).length})</button>
-        <button className={"chip"+(subTab==="deliveries"?" on":"")} onClick={()=>setSubTab("deliveries")}>🚚 Deliveries ({(allDeliveries||[]).length})</button>
+        <button className={"chip"+(subTab==="approvals"?" on":"")} onClick={()=>setSubTab("approvals")}>Queue ({pendingUsers.length})</button>
+        <button className={"chip"+(subTab==="orders"?" on":"")} onClick={()=>setSubTab("orders")}>Orders ({(allOrders||[]).length})</button>
+        <button className={"chip"+(subTab==="deliveries"?" on":"")} onClick={()=>setSubTab("deliveries")}>Deliveries ({(allDeliveries||[]).length})</button>
       </div>
       {subTab==="approvals"&&(
         <div>
@@ -1246,12 +1210,12 @@ function AdminView(){
               <div className="card row" key={u.id}>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:8}}><h3>{u.full_name}</h3><span className="pill o">{u.role}</span></div>
-                  <div className="mute">{u.phone} Â· {u.district_name||"Uganda"}</div>
+                  <div className="mute">{u.phone} - {u.district_name||"Uganda"}</div>
                   <div className="mute">Doc: <b>{u.verification_doc||"None"}</b></div>
                 </div>
                 <div style={{display:"flex",gap:6}}>
-                  <button className="btn sm" onClick={()=>verifyUser(u.id,true)}>Approve â</button>
-                  <button className="btn sm bad" onClick={()=>verifyUser(u.id,false)}>Reject â</button>
+                  <button className="btn sm" onClick={()=>verifyUser(u.id,true)}>Approve</button>
+                  <button className="btn sm bad" onClick={()=>verifyUser(u.id,false)}>Reject</button>
                 </div>
               </div>
             ))
@@ -1267,9 +1231,9 @@ function AdminView(){
                 <div className="row">
                   <div>
                     <h3>{o.item_title}</h3>
-                    <div className="mute">#{o.order_number} Â· {num(o.quantity)} {o.unit} Â· <b>{ugx(o.total_amount)}</b></div>
-                    <div className="mute">{o.seller_name} ({o.seller_phone}) â {o.buyer_name} ({o.buyer_phone})</div>
-                    <div className="mute">{o.pickup_district} â {o.dropoff_district||"Farm gate"}</div>
+                    <div className="mute">#{o.order_number} - {num(o.quantity)} {o.unit} - <b>{ugx(o.total_amount)}</b></div>
+                    <div className="mute">{o.seller_name} ({o.seller_phone}) to {o.buyer_name} ({o.buyer_phone})</div>
+                    <div className="mute">{o.pickup_district} to {o.dropoff_district||"Farm gate"}</div>
                   </div>
                   <span className="pill g">{o.status}</span>
                 </div>
@@ -1287,7 +1251,7 @@ function AdminView(){
                 <div className="row">
                   <div>
                     <h3>{d.item}</h3>
-                    <div className="mute">{d.pickup} â {d.dropoff} Â· {d.transporter_name||"Unassigned"}</div>
+                    <div className="mute">{d.pickup} to {d.dropoff} - {d.transporter_name||"Unassigned"}</div>
                   </div>
                   <span className={"pill "+(d.status==="delivered"?"g":"o")}>{d.status}</span>
                 </div>
@@ -1314,7 +1278,7 @@ function ProductDetailSheet({listing,onClose}){
   const [chosenTransporter,setChosenTransporter]=useState("");
   const [message,setMessage]=useState("");
   const [submitting,setSubmitting]=useState(false);
-  const meta=CROPS[listing.crop_name]||{emoji:"?",grad:"135deg,#79a73a,#5f8f3a"};
+  const meta=CROPS[listing.crop_name]||{grad:"135deg,#79a73a,#5f8f3a"};
   const photo=listing.image||listing.image_url||getCropImg(listing.crop_name);
   const similar=(produceListings||[]).filter(l=>l.id!==listing.id&&l.crop_name===listing.crop_name&&l.status==="active").slice(0,4);
   const districtId=(backendDistricts||[]).find(d=>d.name.toLowerCase()===destDistrict.toLowerCase())?.id;
@@ -1338,12 +1302,12 @@ function ProductDetailSheet({listing,onClose}){
       <div onClick={e=>e.stopPropagation()}>
         <div className="pds-hero">
           {photo?<img src={photo} alt={listing.title} className="pds-img"/>
-            :<div className="pds-emoji-bg" style={{background:`linear-gradient(${meta.grad})`}}><span>{meta.emoji}</span></div>}
+            :<div className="pds-emoji-bg" style={{background:`linear-gradient(${meta.grad})`}}><span>{listing.crop_name[0]}</span></div>}
         </div>
         <div className="pds-body">
           <h2 className="pds-title">{listing.title}</h2>
-          <div className="pds-farmer">{listing.crop_name} · {listing.district_name} · Grade {listing.quality_grade}</div>
-          <div className="pds-farmer">Farmer: {listing.farmer_name} · {listing.farmer_phone}</div>
+          <div className="pds-farmer">{listing.crop_name} &middot; {listing.district_name} &middot; Grade {listing.quality_grade}</div>
+          <div className="pds-farmer">Farmer: {listing.farmer_name} &middot; {listing.farmer_phone}</div>
           <div className="pds-price-row"><span className="pds-price">{ugx(listing.price_per_unit)}</span><span className="pds-unit"> / {listing.unit}</span></div>
           <div className="mute" style={{fontSize:"0.82rem",marginBottom:16}}>{num(maxQty)} {listing.unit} available</div>
           {user?.role==="transporter"?<div className="warn">Transporters cannot place orders.</div>
@@ -1370,7 +1334,7 @@ function ProductDetailSheet({listing,onClose}){
                       </select>
                       <select value={chosenTransporter} onChange={e=>setChosenTransporter(e.target.value)}>
                         <option value="">Any Verified Transporter</option>
-                        {(transporters||[]).map(t=><option key={t.id} value={t.id}>{t.name} · {t.phone}</option>)}
+                        {(transporters||[]).map(t=><option key={t.id} value={t.id}>{t.name} &middot; {t.phone}</option>)}
                       </select>
                     </>}
                     <textarea rows={2} placeholder="Note to farmer (optional)..." value={message} onChange={e=>setMessage(e.target.value)}/>
@@ -1385,7 +1349,7 @@ function ProductDetailSheet({listing,onClose}){
                     <button type="button" className="similar-card" key={item.id} onClick={()=>{onClose();setTimeout(()=>setOpenListing(item),100);}}>
                       <div className="similar-img">{(item.image||item.image_url||getCropImg(item.crop_name))
                         ?<img src={item.image||item.image_url||getCropImg(item.crop_name)} alt={item.title}/>
-                        :<span>{(CROPS[item.crop_name]||meta).emoji}</span>}</div>
+                        :<span>{item.crop_name[0]}</span>}</div>
                       <div>{item.crop_name}</div><div>{item.district_name}</div>
                       <div>{ugx(item.price_per_unit)}</div>
                     </button>
@@ -1447,13 +1411,13 @@ function CartModal({onClose}){
         {!items.length?<div className="card empty"><p>Your cart is empty.</p><p className="mute">Add produce from the marketplace.</p></div>:<>
           {items.map(({listing,qty})=>{
             const photo=listing.image||listing.image_url||getCropImg(listing.crop_name);
-            const meta=CROPS[listing.crop_name]||{emoji:"?",grad:"135deg,#79a73a,#5f8f3a"};
+            const meta=CROPS[listing.crop_name]||{grad:"135deg,#79a73a,#5f8f3a"};
             const maxQty=Number(listing.quantity_available);
             return <div className="cart-item" key={listing.id}>
-              <div className="cart-item-img">{photo?<img src={photo} alt={listing.crop_name}/>:<span>{meta.emoji}</span>}</div>
+              <div className="cart-item-img">{photo?<img src={photo} alt={listing.crop_name}/>:<span>{listing.crop_name[0]}</span>}</div>
               <div className="cart-item-info">
                 <div className="cart-item-name">{listing.crop_name}</div>
-                <div className="cart-item-sub">{listing.district_name} · {listing.farmer_name}</div>
+                <div className="cart-item-sub">{listing.district_name} &middot; {listing.farmer_name}</div>
                 <div className="cart-item-price">{ugx(listing.price_per_unit)}/{listing.unit}</div>
               </div>
               <div className="cart-item-controls">
@@ -1464,7 +1428,7 @@ function CartModal({onClose}){
                   <button onClick={()=>updateCartQty(listing.id,Math.min(maxQty,qty+1))}>+</button>
                 </div>
                 <div className="cart-line-total">{ugx(qty*Number(listing.price_per_unit))}</div>
-                <button className="cart-remove" onClick={()=>removeFromCart(listing.id)}>×</button>
+                <button className="cart-remove" onClick={()=>removeFromCart(listing.id)}>&times;</button>
               </div>
             </div>;
           })}
@@ -1478,13 +1442,13 @@ function CartModal({onClose}){
               </select>
               <select value={chosenTransporter} onChange={e=>setChosenTransporter(e.target.value)}>
                 <option value="">Any Verified Transporter</option>
-                {(transporters||[]).map(t=><option key={t.id} value={t.id}>{t.name} · {t.phone}</option>)}
+                {(transporters||[]).map(t=><option key={t.id} value={t.id}>{t.name} &middot; {t.phone}</option>)}
               </select>
             </>}
           </div>
           <button className="glass-btn" style={{marginTop:16,background:"linear-gradient(135deg,#2d7a54,#1f5a3d)"}}
             onClick={placeOrders} disabled={submitting}>
-            {submitting?"Sending requests...":`Place Order · ${ugx(cartTotal)}`}
+            {submitting?"Sending requests...":`Place Order - ${ugx(cartTotal)}`}
           </button>
         </>}
         <button className="btn alt w" style={{marginTop:10}} onClick={onClose}>Close</button>
@@ -1494,7 +1458,7 @@ function CartModal({onClose}){
 }
 
 // ==========================================
-// PAYMENT MODAL — MTN + Airtel links
+// PAYMENT MODAL
 // ==========================================
 function PaymentModal({order,onClose}){
   const {toast}=useContext(AppContext);
@@ -1517,7 +1481,7 @@ function PaymentModal({order,onClose}){
         <div className="card" style={{background:"rgba(31,90,61,0.06)",border:"1.5px solid var(--pri)",textAlign:"center",marginBottom:20}}>
           <small>Total Escrow Amount</small>
           <b style={{fontSize:"1.4rem",color:"var(--pri)",display:"block"}}>{ugx(order.total_amount)}</b>
-          <small className="mute">#{order.order_number} Â· {order.item_title}</small>
+          <small className="mute">#{order.order_number} &middot; {order.item_title}</small>
         </div>
         <p style={{fontWeight:700,marginBottom:12}}>Choose your network:</p>
         <button className="pay-network-btn mtn"
@@ -1526,7 +1490,7 @@ function PaymentModal({order,onClose}){
           <MtnLogo/>
           <div>
             <div style={{fontWeight:800}}>MTN Mobile Money</div>
-            <div style={{fontSize:"0.76rem",opacity:0.8}}>Dial *165# Â· Pay {ugx(order.total_amount)}</div>
+            <div style={{fontSize:"0.76rem",opacity:0.8}}>Dial *165# &middot; Pay {ugx(order.total_amount)}</div>
           </div>
         </button>
         <button className="pay-network-btn airtel"
@@ -1535,7 +1499,7 @@ function PaymentModal({order,onClose}){
           <AirtelLogo/>
           <div>
             <div style={{fontWeight:800}}>Airtel Money</div>
-            <div style={{fontSize:"0.76rem",opacity:0.8}}>Dial *185# Â· Pay {ugx(order.total_amount)}</div>
+            <div style={{fontSize:"0.76rem",opacity:0.8}}>Dial *185# &middot; Pay {ugx(order.total_amount)}</div>
           </div>
         </button>
         <button className="btn alt w" style={{marginTop:14}} onClick={onClose}>Cancel</button>
@@ -1584,7 +1548,7 @@ function NewListingModal({onClose,onSaved}){
         crop:cropObj?.id,title,quantity_available:qty,unit:cropObj?.default_unit||"kg",
         price_per_unit:price,district:distObj?.id,quality_grade:grade,image_url:photoPreview,description:desc
       }});
-      toast(user?.is_verified?"Harvest published!":"Saved! Awaiting admin verification.");
+      toast(user?.is_verified?"Harvest published!":"Saved. Awaiting admin verification.");
       onSaved&&onSaved(); onClose();
     }catch(e){ toast(e.message); }
     finally{ setSubmitting(false); }
@@ -1593,17 +1557,16 @@ function NewListingModal({onClose,onSaved}){
   return(
     <div className="sheet" onClick={onClose}>
       <div onClick={e=>e.stopPropagation()}>
-        <h2>🌾 Add Farm Produce</h2>
+        <h2>Add Farm Produce</h2>
         <label>Crop</label>
         <select value={crop} onChange={e=>{ const c=e.target.value; setCrop(c); setTitle(`Fresh ${c}`); if(!photoFile) setPhotoPreview(getCropImg(c)||""); }}>
-          {Object.keys(CROPS).map(c=><option key={c} value={c}>{CROPS[c].emoji} {c}</option>)}
+          {Object.keys(CROPS).map(c=><option key={c} value={c}>{c}</option>)}
         </select>
         <label>Title</label>
         <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Dry Maize, 2 Tonnes"/>
         <label>Picture</label>
         <div className="img-upload-box" onClick={()=>document.getElementById("produce-img").click()}>
           <input id="produce-img" type="file" accept="image/*" style={{display:"none"}} onChange={handleFileChange}/>
-          <div style={{fontSize:"1.8rem"}}>ð·</div>
           <b>Tap to upload photo</b>
           <div className="mute" style={{fontSize:"0.76rem"}}>Default crop image used if none selected</div>
         </div>
@@ -1612,7 +1575,7 @@ function NewListingModal({onClose,onSaved}){
           <div>
             <label>Quantity ({CROPS[crop]?.unit||"kg"})</label>
             <div className="qty-stepper">
-              <button type="button" className="qty-btn" onClick={()=>setQty(q=>Math.max(1,q-1))}>â</button>
+              <button type="button" className="qty-btn" onClick={()=>setQty(q=>Math.max(1,q-1))}>-</button>
               <input type="number" value={qty} onChange={e=>setQty(parseFloat(e.target.value)||0)} className="qty-input"/>
               <button type="button" className="qty-btn" onClick={()=>setQty(q=>q+1)}>+</button>
             </div>
@@ -1639,7 +1602,7 @@ function NewListingModal({onClose,onSaved}){
         <label>Notes</label>
         <textarea placeholder="e.g. Well-dried, 50kg bags, ready for pickup." value={desc} onChange={e=>setDesc(e.target.value)} rows={2}/>
         <button className="btn w" style={{marginTop:14}} onClick={handleSubmit} disabled={submitting}>
-          {submitting?"Publishingâ¦":"Publish Listing"}
+          {submitting?"Publishing...":"Publish Listing"}
         </button>
         <button className="btn alt w" style={{marginTop:8}} onClick={onClose}>Cancel</button>
       </div>
@@ -1659,15 +1622,15 @@ function TrackingModal({deliveryId,onClose}){
   return(
     <div className="sheet" onClick={onClose}>
       <div onClick={e=>e.stopPropagation()}>
-        <h2>🚚 Delivery Tracking</h2>
-        {delivery&&<div className="mute">#{delivery.order_number} Â· {delivery.item}</div>}
+        <h2>Delivery Tracking</h2>
+        {delivery&&<div className="mute">#{delivery.order_number} &middot; {delivery.item}</div>}
         <div style={{margin:"16px 0",background:"var(--surf)",borderRadius:16,padding:14,border:"1px solid var(--line)"}}>
           <svg viewBox="0 0 320 80" className="route-svg">
             <line x1="24" y1="46" x2="296" y2="46" stroke="var(--line)" strokeWidth="6" strokeLinecap="round"/>
             <line x1="24" y1="46" x2={truckX} y2="46" stroke="var(--pri)" strokeWidth="6" strokeLinecap="round"/>
             <circle cx="24" cy="46" r="8" fill="var(--pri)"/>
             <circle cx="296" cy="46" r="8" fill={prog>=1?"var(--lime)":"var(--acc)"}/>
-            <text x={truckX} y="32" fontSize="22" textAnchor="middle">🚚</text>
+            <rect x={truckX-10} y="22" width="20" height="14" rx="3" fill="var(--pri)"/>
             <text x="24" y="70" fontSize="11" fill="currentColor" fontWeight="700">{delivery?.pickup||"Origin"}</text>
             <text x="296" y="70" fontSize="11" textAnchor="end" fill="currentColor" fontWeight="700">{delivery?.dropoff||"Dest"}</text>
           </svg>
@@ -1678,7 +1641,7 @@ function TrackingModal({deliveryId,onClose}){
           </div>
           {delivery?.transporter_name&&(
             <div style={{marginTop:10,fontSize:"0.82rem",background:"var(--bg)",borderRadius:10,padding:"8px 12px"}}>
-              🚚 Transporter: <b>{delivery.transporter_name}</b>
+              Transporter: <b>{delivery.transporter_name}</b>
               {delivery.transporter_phone&&<a href={`tel:${delivery.transporter_phone}`} style={{color:"var(--pri)",fontWeight:700,marginLeft:8}}>{delivery.transporter_phone}</a>}
             </div>
           )}
@@ -1705,32 +1668,32 @@ function BottomNav(){
 
   if(role==="transporter") return(
     <nav className="bottom-nav">
-      <button className={transporterTab==="active"?"on":""} onClick={()=>setTransporterTab("active")}><span>🚚</span> Active Trips</button>
-      <button className={transporterTab==="jobs"?"on":""} onClick={()=>setTransporterTab("jobs")}><span>📋</span> Open Jobs</button>
-      <button className={transporterTab==="history"?"on":""} onClick={()=>setTransporterTab("history")}><span>🏁</span> Completed</button>
-      <button onClick={()=>setOpenProfile(true)}><span>👤</span> Profile</button>
+      <button className={transporterTab==="active"?"on":""} onClick={()=>setTransporterTab("active")}>Active Trips</button>
+      <button className={transporterTab==="jobs"?"on":""} onClick={()=>setTransporterTab("jobs")}>Open Jobs</button>
+      <button className={transporterTab==="history"?"on":""} onClick={()=>setTransporterTab("history")}>Completed</button>
+      <button onClick={()=>setOpenProfile(true)}>Profile</button>
     </nav>
   );
 
   if(role==="farmer") return(
     <nav className="bottom-nav">
-      <button className={farmerTab==="inventory"?"on":""} onClick={()=>setFarmerTab("inventory")}><span>🌾</span> My Farm</button>
-      <button onClick={()=>setOpenProfile(true)}><span>👤</span> Profile</button>
+      <button className={farmerTab==="inventory"?"on":""} onClick={()=>setFarmerTab("inventory")}>My Farm</button>
+      <button className={farmerTab==="requests"?"on":""} onClick={()=>setFarmerTab("requests")}>Requests</button>
+      <button className={farmerTab==="orders"?"on":""} onClick={()=>setFarmerTab("orders")}>Orders</button>
+      <button onClick={()=>setOpenProfile(true)}>Profile</button>
     </nav>
   );
 
   if(role==="admin") return(
     <nav className="bottom-nav">
-      <button><span>🛡️</span> Dashboard</button>
+      <button>Dashboard</button>
       <a href="/admin/" target="_blank" rel="noreferrer"
         style={{textDecoration:"none",color:"inherit",flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}}>
-        <span style={{fontSize:"1.3rem"}}>âï¸</span>
-        <span style={{fontSize:"0.72rem",fontWeight:600}}>Django DB</span>
+        <span style={{fontSize:"0.72rem",fontWeight:600}}>Django Admin</span>
       </a>
-      <button onClick={()=>setOpenProfile(true)}><span>👤</span> Profile</button>
+      <button onClick={()=>setOpenProfile(true)}>Profile</button>
     </nav>
   );
 
-  // Buyer — handled by the buyer-bottom-nav inside BuyerView; this renders nothing
   return null;
 }
